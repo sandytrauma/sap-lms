@@ -15,8 +15,11 @@ import {
 // --- 1. CONSTANTS & UTILITIES ---
 
 const SAP_BLUE = '#0083B3';
+// Models for Gemini API
 const MODEL_TTS = 'gemini-2.5-flash-preview-tts';
 const MODEL_TEXT = 'gemini-2.5-flash-preview-09-2025';
+
+// API Key is correctly read from the environment variable
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY || ""; 
 
 // Utility to convert Base64 to ArrayBuffer
@@ -497,6 +500,12 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ currentCourseId }) => {
         e?.preventDefault();
         if (!input.trim() || loading) return;
 
+        // API Key check
+        if (!apiKey) {
+            setResponse("API Key is missing. Please set NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY.");
+            return;
+        }
+
         const currentInput = input;
         setInput('');
         setResponse('');
@@ -510,6 +519,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ currentCourseId }) => {
         const systemPrompt = `You are a friendly and knowledgeable SAP AI Instructor. Keep your answers concise, informative, and pedagogical. Your response MUST be in simple Markdown format. ${context}`;
         const userQuery = currentInput;
 
+        // Using the API key via URL parameter
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT}:generateContent?key=${apiKey}`;
         
         const payload = {
@@ -723,7 +733,7 @@ const App: React.FC = () => {
                     <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 mt-6 text-sm">
                          <h3 className="font-bold text-gray-800 mb-2">User Session</h3>
                          <p className="text-xs text-red-500 font-bold mb-1">Progress is NOT cloud-saved.</p>
-                         <p className="font-mono text-xs text-gray-700 break-all">{userId}</p>
+                         <p className="font-mono text-xs text-gray-700 break-all">User ID: {userId}</p>
                     </div>
                 </div>
             </main>
