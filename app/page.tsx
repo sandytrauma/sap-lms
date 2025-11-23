@@ -10,6 +10,7 @@ import {
     VolumeX,
     ClipboardCheck,
     Clipboard,
+    BookOpen, // New Icon for Chapters
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & UTILITIES ---
@@ -111,17 +112,24 @@ async function fetchWithExponentialBackoff<T>(
     throw new Error("Maximum retries reached.");
 }
 
-// --- 2. TYPES AND MOCK DATA ---
+// --- 2. TYPES AND MOCK DATA (UPDATED) ---
+
+interface Chapter {
+    id: string;
+    title: string;
+    content: string; // The text content the AI will use to "teach" the user
+}
 
 interface Module {
-    title: string;
+    name: string; // Renamed 'title' to 'name'
     id: string;
+    chapters: Chapter[]; // New: List of chapters
 }
 
 interface SAPCourse {
     id: string;
     title: string;
-    domain: 'Logistics' | 'Finance' | 'Technical';
+    domain: 'Logistics' | 'Finance' | 'Technical' | 'Cross-Functional'; // Added a domain
     totalModules: number;
     modules: Module[];
     description: string;
@@ -129,7 +137,8 @@ interface SAPCourse {
 
 interface ProgressEntry {
     courseId: string;
-    completedModules: string[]; // Array of Module IDs
+    // This array will now store completed CHAPTER IDs, not Module IDs
+    completedModules: string[]; 
 }
 
 const SAP_COURSES: SAPCourse[] = [
@@ -137,14 +146,50 @@ const SAP_COURSES: SAPCourse[] = [
         id: 'mm',
         title: 'SAP MM (Materials Management)',
         domain: 'Logistics',
-        totalModules: 5,
+        totalModules: 5, 
         description: 'Comprehensive guide to procurement processes, inventory management, and invoice verification in SAP.',
         modules: [
-            { id: 'mm-1', title: 'Master Data Setup (Vendor & Material)' },
-            { id: 'mm-2', title: 'Purchase Requisition & Order Processing' },
-            { id: 'mm-3', title: 'Goods Receipt and Movement Types' },
-            { id: 'mm-4', title: 'Invoice Verification (LIV)' },
-            { id: 'mm-5', title: 'Inventory Management and Physical Inventory' },
+            { 
+                id: 'mm-1', 
+                name: 'Master Data Setup (Vendor & Material)',
+                chapters: [
+                    { id: 'mm-c1.1', title: 'Material Master Views & Creation', content: "The Material Master is central to logistics. It defines how a material is managed. Key views are Basic Data, Purchasing, Accounting, and Warehouse Management. T-code: MM01." },
+                    { id: 'mm-c1.2', title: 'Vendor Master (Business Partner)', content: "The Vendor Master is now part of the Business Partner (BP) concept in S/4HANA. It holds all supplier-related data, like address, payment terms, and purchasing data. T-code: BP." },
+                ]
+            },
+            { 
+                id: 'mm-2', 
+                name: 'Purchase Requisition & Order Processing',
+                chapters: [
+                    { id: 'mm-c2.1', title: 'Creating a Purchase Requisition (PR)', content: "A Purchase Requisition is an internal document requesting a material or service. It's the first formal step in procurement. T-code: ME51N." },
+                    { id: 'mm-c2.2', title: 'Source Determination & Purchase Order (PO)', content: "The Purchase Order is a formal, external document sent to a vendor, committing the company to the purchase. T-code: ME21N." },
+                    { id: 'mm-c2.3', title: 'Contract & Scheduling Agreement', content: "These are long-term procurement agreements with vendors, simplifying future PO creation." },
+                ]
+            },
+            { 
+                id: 'mm-3', 
+                name: 'Goods Receipt and Movement Types',
+                chapters: [
+                    { id: 'mm-c3.1', title: 'Performing a Goods Receipt (GR)', content: "The Goods Receipt documents the physical movement of goods into inventory, referencing a Purchase Order. This creates a material document. T-code: MIGO." },
+                    { id: 'mm-c3.2', title: 'Understanding Movement Types', content: "Movement types (e.g., 101 for GR, 201 for consumption) control how goods movement is recorded in the system and the corresponding General Ledger postings." },
+                ]
+            },
+            { 
+                id: 'mm-4', 
+                name: 'Invoice Verification (LIV)',
+                chapters: [
+                    { id: 'mm-c4.1', title: 'Entering a Vendor Invoice', content: "Invoice Verification is the final step in the P2P cycle, matching the invoice against the PO and GR to ensure accuracy. This posts the financial liability. T-code: MIRO." },
+                    { id: 'mm-c4.2', title: 'Three-Way Match Concept', content: "The three-way match verifies the data between the Purchase Order, the Goods Receipt, and the Invoice before payment is approved." },
+                ]
+            },
+            { 
+                id: 'mm-5', 
+                name: 'Inventory Management and Physical Inventory',
+                chapters: [
+                    { id: 'mm-c5.1', title: 'Stock Types and Valuation', content: "Stock can be unrestricted, quality inspection, or blocked. Valuation defines the cost of the material." },
+                    { id: 'mm-c5.2', title: 'Physical Inventory Process', content: "This process ensures that the physical stock matches the system stock. Key steps include document creation, counting, and posting differences. T-code: MI01, MI04, MI07." },
+                ]
+            },
         ]
     },
     {
@@ -154,12 +199,54 @@ const SAP_COURSES: SAPCourse[] = [
         totalModules: 6,
         description: 'Learn General Ledger, Accounts Payable/Receivable, Cost Center Accounting, and Internal Orders.',
         modules: [
-            { id: 'fi-1', title: 'General Ledger Configuration' },
-            { id: 'fi-2', title: 'Accounts Payable (AP) Process' },
-            { id: 'fi-3', title: 'Accounts Receivable (AR) Process' },
-            { id: 'co-4', title: 'Cost Center Accounting (CCA)' },
-            { id: 'co-5', title: 'Profit Center Accounting (PCA)' },
-            { id: 'co-6', title: 'Internal Orders and Settlements' },
+            { 
+                id: 'fi-1', 
+                name: 'General Ledger Configuration',
+                chapters: [
+                    { id: 'fi-c1.1', title: 'Chart of Accounts Structure', content: "The Chart of Accounts (CoA) is the list of all General Ledger accounts used by a company. It is a fundamental FI component. T-code: OB13." },
+                    { id: 'fi-c1.2', title: 'Posting a Simple Journal Entry', content: "A basic financial transaction involving a debit and a credit to General Ledger accounts. T-code: FB50." },
+                ]
+            },
+            { 
+                id: 'fi-2', 
+                name: 'Accounts Payable (AP) Process',
+                chapters: [
+                    { id: 'fi-c2.1', title: 'Posting a Vendor Invoice (FI)', content: "Directly posting an invoice without reference to MM. T-code: FB60." },
+                    { id: 'fi-c2.2', title: 'Automatic Payment Program (APP)', content: "APP automates the process of selecting due invoices and making payments. T-code: F110." },
+                ]
+            },
+            { 
+                id: 'fi-3', 
+                name: 'Accounts Receivable (AR) Process',
+                chapters: [
+                    { id: 'fi-c3.1', title: 'Posting a Customer Invoice (FI)', content: "Directly posting an invoice to a customer. T-code: FB70." },
+                    { id: 'fi-c3.2', title: 'Processing Incoming Payments', content: "Recording payments received from customers. T-code: F-28." },
+                ]
+            },
+            { 
+                id: 'co-4', 
+                name: 'Cost Center Accounting (CCA)',
+                chapters: [
+                    { id: 'co-c4.1', title: 'Defining Cost Centers and Hierarchy', content: "Cost Centers collect costs where they occur within an organization. T-code: KS01." },
+                    { id: 'co-c4.2', title: 'Allocations: Distribution and Assessment', content: "Methods to re-distribute costs from a sender to multiple receiver cost objects." },
+                ]
+            },
+            { 
+                id: 'co-5', 
+                name: 'Profit Center Accounting (PCA)',
+                chapters: [
+                    { id: 'co-c5.1', title: 'Setting up a Profit Center', content: "Profit Centers are used for internal control to determine profitability across different areas of the business. T-code: KE51." },
+                    { id: 'co-c5.2', title: 'Reporting on Profitability', content: "Analyzing P&L statements segmented by Profit Center." },
+                ]
+            },
+            { 
+                id: 'co-6', 
+                name: 'Internal Orders and Settlements',
+                chapters: [
+                    { id: 'co-c6.1', title: 'Using Internal Orders for Tracking', content: "Internal Orders track costs and revenue for specific, short-term projects or events. T-code: KO01." },
+                    { id: 'co-c6.2', title: 'Order Settlement Process', content: "Settlement moves the total costs collected on an internal order to a permanent cost object (like a Cost Center or Fixed Asset)." },
+                ]
+            },
         ]
     },
     {
@@ -169,12 +256,89 @@ const SAP_COURSES: SAPCourse[] = [
         totalModules: 4,
         description: 'Master the Order-to-Cash process including sales order creation, shipping, and billing.',
         modules: [
-            { id: 'sd-1', title: 'Sales Order Creation and Types' },
-            { id: 'sd-2', title: 'Pricing and Condition Techniques' },
-            { id: 'sd-3', title: 'Delivery Processing and Picking' },
-            { id: 'sd-4', title: 'Billing and Invoicing' },
+            { 
+                id: 'sd-1', 
+                name: 'Sales Order Creation and Types',
+                chapters: [
+                    { id: 'sd-c1.1', title: 'The Sales Order Document', content: "The core document in SD, containing customer, material, and pricing information. T-code: VA01." },
+                    { id: 'sd-c1.2', title: 'Sales Document Types (e.g., OR, RE)', content: "Different document types control the entire sales process flow (Standard Order, Returns, Cash Sale)." },
+                ]
+            },
+            { 
+                id: 'sd-2', 
+                name: 'Pricing and Condition Techniques',
+                chapters: [
+                    { id: 'sd-c2.1', title: 'Condition Records and Tables', content: "Pricing in SD is determined by the Condition Technique, which uses condition records to calculate the final price." },
+                    { id: 'sd-c2.2', title: 'Pricing Procedure Determination', content: "The procedure is the sequence in which the system calculates prices, discounts, and taxes." },
+                ]
+            },
+            { 
+                id: 'sd-3', 
+                name: 'Delivery Processing and Picking',
+                chapters: [
+                    { id: 'sd-c3.1', title: 'Creating the Delivery Document', content: "The delivery document facilitates shipping activities and initiates the stock reduction. T-code: VL01N." },
+                    { id: 'sd-c3.2', title: 'Post Goods Issue (PGI)', content: "PGI is the legal movement of goods out of inventory, which triggers a financial posting (COGS) and marks the end of the logistics flow." },
+                ]
+            },
+            { 
+                id: 'sd-4', 
+                name: 'Billing and Invoicing',
+                chapters: [
+                    { id: 'sd-c4.1', title: 'Generating the Billing Document', content: "Billing creates the customer invoice and simultaneously posts the revenue and receivable to FI. T-code: VF01." },
+                    { id: 'sd-c4.2', title: 'Integration with Financial Accounting', content: "Billing is the key integration point where SD data flows into FI/CO modules." },
+                ]
+            },
         ]
     },
+    {
+        id: 'abap',
+        title: 'SAP ABAP Fundamentals',
+        domain: 'Technical',
+        totalModules: 5,
+        description: 'Introduction to ABAP programming, data dictionary, reports, and function modules.',
+        modules: [
+            {
+                id: 'abap-1',
+                name: 'ABAP Workbench and Syntax Basics',
+                chapters: [
+                    { id: 'abap-c1.1', title: 'Using the ABAP Editor (SE38/SE80)', content: "The primary tool for writing and managing ABAP code. T-code: SE38." },
+                    { id: 'abap-c1.2', title: 'Basic Data Types and Variables', content: "Understanding C (Character), I (Integer), P (Packed), and other fundamental data types." },
+                ]
+            },
+            {
+                id: 'abap-2',
+                name: 'SAP Data Dictionary',
+                chapters: [
+                    { id: 'abap-c2.1', title: 'Creating Transparent Tables', content: "Defining the structure of data tables that map directly to the database. T-code: SE11." },
+                    { id: 'abap-c2.2', title: 'Domain and Data Elements', content: "Re-usable components that define technical attributes (Domain) and functional meaning (Data Element) of a field." },
+                ]
+            },
+            {
+                id: 'abap-3',
+                name: 'Internal Tables and Data Handling',
+                chapters: [
+                    { id: 'abap-c3.1', title: 'Declaring and Populating Internal Tables', content: "Internal tables are used for processing data within an ABAP program." },
+                    { id: 'abap-c3.2', title: 'SELECT Statements (Open SQL)', content: "How to read data from database tables using standard SQL commands in ABAP." },
+                ]
+            },
+            {
+                id: 'abap-4',
+                name: 'Classical and ALV Reporting',
+                chapters: [
+                    { id: 'abap-c4.1', title: 'Creating Simple Reports', content: "Basic report programming using WRITE statements." },
+                    { id: 'abap-c4.2', title: 'Introduction to ALV Grid Display', content: "Using the ABAP List Viewer (ALV) for professional, interactive data reporting." },
+                ]
+            },
+            {
+                id: 'abap-5',
+                name: 'Modularization Techniques',
+                chapters: [
+                    { id: 'abap-c5.1', title: 'Using Includes and Subroutines', content: "Techniques for structuring code for reusability and clarity." },
+                    { id: 'abap-c5.2', title: 'Function Modules (SE37)', content: "Reusable global functions stored in the Function Library. T-code: SE37." },
+                ]
+            }
+        ]
+    }
 ];
 
 // --- 3. LOCAL STORAGE DATA HOOK ---
@@ -215,8 +379,8 @@ const useUserProgress = () => {
         }
     }, [progress, loading]);
 
-    // Update function for components
-    const updateProgress = useCallback((courseId: string, moduleId: string, isCompleted: boolean) => {
+    // Update function for components: moduleId is now a Chapter ID
+    const updateProgress = useCallback((courseId: string, chapterId: string, isCompleted: boolean) => {
         setProgress(prevProgress => {
             let newProgress = [...prevProgress];
             let courseIndex = newProgress.findIndex(p => p.courseId === courseId);
@@ -225,18 +389,18 @@ const useUserProgress = () => {
                 // Course not tracked yet, create new entry
                 const newEntry: ProgressEntry = { 
                     courseId, 
-                    completedModules: isCompleted ? [moduleId] : [] 
+                    completedModules: isCompleted ? [chapterId] : [] // Store chapter ID
                 };
                 newProgress.push(newEntry);
             } else {
-                // Course exists, update modules
+                // Course exists, update chapters
                 let currentEntry = newProgress[courseIndex];
                 let newCompletedModules = [...currentEntry.completedModules];
 
-                if (isCompleted && !newCompletedModules.includes(moduleId)) {
-                    newCompletedModules.push(moduleId);
+                if (isCompleted && !newCompletedModules.includes(chapterId)) {
+                    newCompletedModules.push(chapterId);
                 } else if (!isCompleted) {
-                    newCompletedModules = newCompletedModules.filter(id => id !== moduleId);
+                    newCompletedModules = newCompletedModules.filter(id => id !== chapterId);
                 }
                 newProgress[courseIndex] = { ...currentEntry, completedModules: newCompletedModules };
             }
@@ -257,6 +421,11 @@ const LoadingSpinner: React.FC = () => (
     </div>
 );
 
+// Utility function to get total chapters for a course
+const getTotalChapters = (course: SAPCourse): number => {
+    return course.modules.reduce((total, module) => total + module.chapters.length, 0);
+};
+
 interface CourseCardProps {
     course: SAPCourse;
     progress?: ProgressEntry;
@@ -264,13 +433,15 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress, onView }) => {
+    const totalChapters = getTotalChapters(course);
     const completedCount = progress?.completedModules.length || 0;
-    const completionRatio = (completedCount / course.totalModules) * 100;
-    const isCompleted = completedCount === course.totalModules;
+    const completionRatio = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0;
+    const isCompleted = completedCount === totalChapters && totalChapters > 0;
 
     let domainColor = 'bg-green-500';
     if (course.domain === 'Finance') domainColor = 'bg-yellow-500';
     if (course.domain === 'Technical') domainColor = 'bg-red-500';
+    if (course.domain === 'Cross-Functional') domainColor = 'bg-indigo-500';
 
     return (
         <div 
@@ -286,7 +457,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress, onView }) => 
                 
                 <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium text-gray-500">
-                        {isCompleted ? 'Completed' : `${completedCount}/${course.totalModules} Modules`}
+                        {isCompleted ? 'Completed' : `${completedCount}/${totalChapters} Chapters`}
                     </span>
                     {isCompleted && <CheckCircle className='w-5 h-5 text-green-500' />}
                 </div>
@@ -306,21 +477,35 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress, onView }) => 
 interface CourseDetailProps {
     course: SAPCourse;
     progress?: ProgressEntry;
-    updateProgress: (courseId: string, moduleId: string, isCompleted: boolean) => void;
+    // The update function now takes chapterId
+    updateProgress: (courseId: string, chapterId: string, isCompleted: boolean) => void; 
     onBack: () => void;
 }
 
 const CourseDetail: React.FC<CourseDetailProps> = ({ course, progress, updateProgress, onBack }) => {
-    const isModuleCompleted = (moduleId: string) => 
-        progress?.completedModules.includes(moduleId) || false;
+    // Check completion status based on Chapter ID
+    const isChapterCompleted = (chapterId: string) => 
+        progress?.completedModules.includes(chapterId) || false;
 
-    const handleToggleCompletion = (moduleId: string, isCompleted: boolean) => {
-        updateProgress(course.id, moduleId, isCompleted);
+    // Toggle completion, passing Chapter ID
+    const handleToggleCompletion = (chapterId: string, isCompleted: boolean) => {
+        updateProgress(course.id, chapterId, isCompleted);
     };
 
+    // Calculate progress based on Chapters
+    const totalChapters = useMemo(() => getTotalChapters(course), [course]);
     const completedCount = progress?.completedModules.length || 0;
-    const completionRatio = (completedCount / course.totalModules) * 100;
-    const isCourseCompleted = completedCount === course.totalModules;
+    const completionRatio = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0;
+    const isCourseCompleted = completedCount === totalChapters && totalChapters > 0;
+    
+    // Total count of Modules that have ALL their chapters completed
+    const completedModulesCount = useMemo(() => {
+        return course.modules.filter(module => {
+            const moduleChapterIds = module.chapters.map(c => c.id);
+            return moduleChapterIds.every(chapterId => isChapterCompleted(chapterId));
+        }).length;
+    }, [course.modules, progress]);
+
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -343,10 +528,12 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, progress, updatePro
                 )}
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress Bar - Updated to show Chapter progress */}
             <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-gray-700">Your Progress</span>
+                    <span className="font-semibold text-gray-700">
+                        Your Progress: {completedCount}/{totalChapters} Chapters Completed
+                    </span>
                     <span className="font-bold text-lg" style={{ color: SAP_BLUE }}>{completionRatio.toFixed(0)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
@@ -357,37 +544,61 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, progress, updatePro
                 </div>
             </div>
 
-            {/* Modules List */}
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Course Modules</h3>
-            <div className="space-y-3">
-                {course.modules.map((module, index) => {
-                    const isCompleted = isModuleCompleted(module.id);
+            {/* Modules List with nested Chapters */}
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Course Modules ({completedModulesCount}/{course.totalModules} Completed)</h3>
+            <div className="space-y-6">
+                {course.modules.map((module, moduleIndex) => {
+                    const moduleTotalChapters = module.chapters.length;
+                    const moduleCompletedChapters = module.chapters.filter(c => isChapterCompleted(c.id)).length;
+                    const isModuleCompleted = moduleCompletedChapters === moduleTotalChapters;
+                    
                     return (
-                        <div 
-                            key={module.id} 
-                            className={`p-4 rounded-lg shadow-sm flex justify-between items-center transition-all duration-200 ${isCompleted ? 'bg-green-50 border-l-4 border-green-500' : 'bg-gray-100 border-l-4 border-gray-300 hover:bg-gray-200'}`}
-                        >
-                            <span className={`font-medium ${isCompleted ? 'text-green-800' : 'text-gray-700'}`}>
-                                {index + 1}. {module.title}
-                            </span>
-                            <button
-                                onClick={() => handleToggleCompletion(module.id, !isCompleted)}
-                                className={`px-3 py-1 text-sm font-semibold rounded-full flex items-center transition-all duration-200 ${
-                                    isCompleted 
-                                        ? 'bg-green-500 text-white hover:bg-green-600' 
-                                        : 'bg-white text-[#0083B3] border border-[#0083B3] hover:bg-[#0083B3] hover:text-white'
-                                }`}
-                            >
-                                {isCompleted ? (
-                                    <>
-                                        <CheckCircle className='w-4 h-4 mr-1'/> Completed
-                                    </>
-                                ) : (
-                                    <>
-                                        <Clipboard className='w-4 h-4 mr-1'/> Mark Done
-                                    </>
-                                )}
-                            </button>
+                        <div key={module.id} className="border border-gray-200 rounded-xl shadow-md overflow-hidden">
+                            {/* Module Header */}
+                            <div className={`p-4 flex justify-between items-center ${isModuleCompleted ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                <span className={`text-xl font-bold ${isModuleCompleted ? 'text-green-800' : 'text-gray-800'}`}>
+                                    {moduleIndex + 1}. {module.name}
+                                </span>
+                                <span className={`text-sm font-semibold ${isModuleCompleted ? 'text-green-600' : 'text-gray-500'}`}>
+                                    {moduleCompletedChapters}/{moduleTotalChapters} Chapters
+                                </span>
+                            </div>
+                            
+                            {/* Chapters List */}
+                            <div className="p-2 space-y-1">
+                                {module.chapters.map((chapter, chapterIndex) => {
+                                    const isCompleted = isChapterCompleted(chapter.id);
+                                    return (
+                                        <div 
+                                            key={chapter.id} 
+                                            className={`p-3 rounded-lg flex justify-between items-center transition-all duration-150 border-l-4 ${isCompleted ? 'bg-white border-green-500' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'}`}
+                                        >
+                                            <span className={`font-medium text-sm flex items-center ${isCompleted ? 'text-green-800' : 'text-gray-700'}`}>
+                                                <BookOpen className='w-4 h-4 mr-2 text-indigo-500'/>
+                                                {moduleIndex + 1}.{chapterIndex + 1} {chapter.title}
+                                            </span>
+                                            <button
+                                                onClick={() => handleToggleCompletion(chapter.id, !isCompleted)}
+                                                className={`px-3 py-1 text-xs font-semibold rounded-full flex items-center transition-all duration-200 ${
+                                                    isCompleted 
+                                                        ? 'bg-green-500 text-white hover:bg-green-600' 
+                                                        : 'bg-white text-[#0083B3] border border-[#0083B3] hover:bg-[#0083B3] hover:text-white'
+                                                }`}
+                                            >
+                                                {isCompleted ? (
+                                                    <>
+                                                        <CheckCircle className='w-3 h-3 mr-1'/> Completed
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Clipboard className='w-3 h-3 mr-1'/> Mark Done
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     );
                 })}
@@ -409,6 +620,25 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ currentCourseId }) => {
 
     const currentCourse = useMemo(() => 
         SAP_COURSES.find(c => c.id === currentCourseId), [currentCourseId]);
+
+    const currentChapter = useMemo(() => {
+        if (!currentCourse) return null;
+        // Simple logic: If an AI lesson starts with the chapter title, 
+        // find the matching chapter to use its content as context.
+        const chapterTitleMatch = input.match(/learn about (.*)/i);
+        if (chapterTitleMatch) {
+            const queryTitle = chapterTitleMatch[1].trim().toLowerCase();
+            for (const module of currentCourse.modules) {
+                for (const chapter of module.chapters) {
+                    if (chapter.title.toLowerCase().includes(queryTitle)) {
+                        return chapter;
+                    }
+                }
+            }
+        }
+        return null;
+    }, [input, currentCourse]);
+
 
     const handleStopSpeaking = () => {
         if (audioRef.current) {
@@ -503,10 +733,20 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ currentCourseId }) => {
         handleStopSpeaking();
         setLoading(true);
 
-        const context = currentCourse 
-            ? `The user is currently studying the SAP course: ${currentCourse.title} (${currentCourse.description}). Reference this course in your answer if relevant.`
-            : "The user is on the main dashboard. Provide a general SAP answer.";
+        let context = currentCourse 
+            ? `The user is currently studying the SAP course: ${currentCourse.title}. `
+            : "The user is on the main dashboard. ";
 
+        // New AI Lesson Integration
+        if (currentChapter) {
+            context += `The user has requested to learn about the chapter: ${currentChapter.title}. Use the following content as your primary source for the answer: "${currentChapter.content}"`;
+        } else if (currentCourse) {
+            // General course context
+            context += `The course domain is ${currentCourse.domain}. Keep your answer relevant to this domain or course if possible.`;
+        } else {
+            context += "Provide a general SAP answer.";
+        }
+        
         const systemPrompt = `You are a friendly and knowledgeable SAP AI Instructor. Keep your answers concise, informative, and pedagogical. Your response MUST be in simple Markdown format. ${context}`;
         const userQuery = currentInput;
 
@@ -545,6 +785,17 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ currentCourseId }) => {
             audioRef.current = new Audio();
         }
     }, []);
+    
+    // Example suggestion for the user
+    const suggestedAction = useMemo(() => {
+        if (currentCourse) {
+            const module = currentCourse.modules[0];
+            const chapter = module.chapters[0];
+            return `Example: "Explain the ${chapter.title} in simple terms."`;
+        }
+        return `Example: "What is SAP HANA?"`;
+    }, [currentCourse]);
+
 
     return (
         <div className="bg-white p-5 rounded-xl shadow-lg border-2 border-indigo-200">
@@ -595,7 +846,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ currentCourseId }) => {
 
             <div className={`p-3 rounded-lg border ${response ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50 border-gray-200'} whitespace-pre-wrap text-sm`}>
                 <p className="font-semibold text-indigo-700 mb-1">Response:</p>
-                <p className="text-gray-800">{response || 'Your answers will appear here. Ask about an SAP t-code or concept!'}</p>
+                <p className="text-gray-800">{response || `Your answers will appear here. ${suggestedAction}`}</p>
             </div>
         </div>
     );
@@ -623,8 +874,11 @@ const App: React.FC = () => {
     
     const completedCourses = progress.filter(p => {
         const course = SAP_COURSES.find(c => c.id === p.courseId);
-        // Check if the progress entry's completed modules match the total modules defined in the course data
-        return course && p.completedModules.length === course.totalModules;
+        if (!course) return false;
+        
+        const totalChapters = getTotalChapters(course);
+        // Check if the progress entry's completed chapters match the total chapters defined
+        return totalChapters > 0 && p.completedModules.length === totalChapters;
     }).length;
     
     const completionRatio = totalCourses > 0 ? (completedCourses / totalCourses) * 100 : 0;
