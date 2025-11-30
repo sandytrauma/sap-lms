@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import SAPTrainingComponents from '@/components/SAPTrainingComponents';
 import { 
     Briefcase, 
     ChevronLeft, 
@@ -12,6 +13,7 @@ import {
     Clipboard,
     BookOpen, // New Icon for Chapters
 } from 'lucide-react';
+import Link from 'next/link';
 
 // --- 1. CONSTANTS & UTILITIES ---
 
@@ -892,6 +894,11 @@ const App: React.FC = () => {
                         <h1 className="text-3xl font-extrabold text-gray-800 mb-2 sm:mb-0">
                             <Briefcase className='w-6 h-6 inline-block mr-2 text-[#0083B3]'/> SAP Skill Builder
                         </h1>
+                        <h2>
+                            <Link href="/test_page">
+                            SAP E-Book
+                            </Link>
+                        </h2>
                         <div className="text-right">
                              <p className="text-xs text-red-500 font-bold">WARNING: Progress is stored locally on this device only.</p>
                             <p className="font-mono text-xs text-gray-700 break-all">User ID: {userId}</p>
